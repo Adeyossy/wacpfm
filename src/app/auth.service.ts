@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, concatMap, from, map } from 'rxjs';
-import { User, Auth, getAuth, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { AsyncSubject, Observable, concatMap, from, map, of } from 'rxjs';
+import { User, Auth, getAuth, createUserWithEmailAndPassword, UserCredential, signInWithEmailAndPassword, sendEmailVerification, AuthErrorCodes, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { initializeApp, FirebaseOptions, FirebaseApp } from 'firebase/app'
 import { HttpClient } from '@angular/common/http';
 
@@ -11,11 +11,15 @@ export class AuthService {
 
   // firebaseAuth$: Observable<
   // firebaseUser$: Observable<User>
+  backendUrl = "/.netlify/functions";
+  asyncSubject = new AsyncSubject<FirebaseOptions>();
 
-  constructor(private httpClient: HttpClient) { }
+  constructor(private httpClient: HttpClient) {
+    this.httpClient.get(`${this.backendUrl}/index`).subscribe(this.asyncSubject);
+  }
 
-  getFirebaseConfig$(): Observable<FirebaseOptions> {
-    return this.httpClient.get('');
+  getFirebaseConfig$(): AsyncSubject<FirebaseOptions> {    
+    return this.asyncSubject;
   }
 
   getFirebaseApp$(): Observable<FirebaseApp> {
@@ -41,6 +45,34 @@ export class AuthService {
   signUp(email: string, password: string): Observable<UserCredential> {
     return this.getFirebaseAuth$().pipe(
       concatMap(auth => from(createUserWithEmailAndPassword(auth, email, password)))
+    );
+  }
+
+  login(email: string, password: string): Observable<UserCredential> {
+    return this.getFirebaseAuth$().pipe(
+      concatMap(auth => signInWithEmailAndPassword(auth, email, password))
+    );
+  }
+
+  verifyEmail() {
+    return this.getFirebaseUser$().pipe(
+      concatMap(user => {
+        if(user) {
+          return from(sendEmailVerification(user))
+        } else throw AuthErrorCodes.INVALID_EMAIL
+      })
+    )
+  }
+
+  resetPassword(email: string) {
+    return this.getFirebaseAuth$().pipe(
+      concatMap(auth => from(sendPasswordResetEmail(auth, email)))
+    )
+  }
+
+  signOut() {
+    return this.getFirebaseAuth$().pipe(
+      concatMap(auth => from(signOut(auth)))
     );
   }
 }
