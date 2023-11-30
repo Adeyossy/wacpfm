@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { AsyncSubject, Observable, concatMap, from, map, of } from 'rxjs';
 import { User, Auth, getAuth, createUserWithEmailAndPassword, UserCredential, signInWithEmailAndPassword, sendEmailVerification, AuthErrorCodes, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { initializeApp, FirebaseOptions, FirebaseApp } from 'firebase/app'
+import { initializeApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
+import { Firestore, addDoc, collection, getFirestore } from 'firebase/firestore';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -11,6 +12,10 @@ export class AuthService {
 
   // firebaseAuth$: Observable<
   // firebaseUser$: Observable<User>
+  usersCollection = "users";
+  updateCourseCollection = "update_courses";
+  updateCourseRecordsCollection = "update_course_records";
+  paymentsCollection = "payments";
   backendUrl = "/.netlify/functions";
   asyncSubject = new AsyncSubject<FirebaseOptions>();
 
@@ -18,7 +23,9 @@ export class AuthService {
     this.httpClient.get(`${this.backendUrl}/index`).subscribe(this.asyncSubject);
   }
 
-  getFirebaseConfig$(): AsyncSubject<FirebaseOptions> {    
+  getFirebaseConfig$(): AsyncSubject<FirebaseOptions> {
+    if (this.asyncSubject.closed)
+      this.httpClient.get(`${this.backendUrl}/index`).subscribe(this.asyncSubject);
     return this.asyncSubject;
   }
 
@@ -42,6 +49,12 @@ export class AuthService {
     );
   }
 
+  getFirestore$(): Observable<Firestore> {
+    return this.getFirebaseApp$().pipe(
+      map(app => getFirestore(app))
+    );
+  }
+
   signUp(email: string, password: string): Observable<UserCredential> {
     return this.getFirebaseAuth$().pipe(
       concatMap(auth => from(createUserWithEmailAndPassword(auth, email, password)))
@@ -55,6 +68,8 @@ export class AuthService {
   }
 
   verifyEmail() {
+    // sendEmailVerification is missing actionCodeSettings
+    // users should be able to enter a code to be verified
     return this.getFirebaseUser$().pipe(
       concatMap(user => {
         if(user) {
@@ -74,5 +89,11 @@ export class AuthService {
     return this.getFirebaseAuth$().pipe(
       concatMap(auth => from(signOut(auth)))
     );
+  }
+
+  addDocToCollection(doc: any, collectionName: string) {
+    return this.getFirestore$().pipe(
+      concatMap(db => addDoc(collection(db, collectionName), doc))
+    )
   }
 }
