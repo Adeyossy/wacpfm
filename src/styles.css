@@ -1,1 +1,40 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --wacpfm-primary-colour: #003CB2;
+  --wacpfm-primary-colour-contrast: #002060;
+  --wacpfm-primary-colour-light: #EBF1FF;
+  --wacpfm-accent-colour-green: #467C30;
+  --wacpfm-accent-colour-orange: #EB921C;
+  --wacpfm-accent-colour-red: #DB3237;
+  --wacpfm-background-colour: #F5F7FA;
+}
+
+body {
+  background-color: var(--wacpfm-background-colour);
+}
+
+h1, h2, h3, h4, h5, h6, .wacpfm-heading {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+}
+
+.wacpfm-heading-big {
+  font-size: 48px;
+}
+
+.wacpfm-heading-medium {
+  font-size: 36px;
+}
+
+.wacpfm-heading-small {
+  font-size: 28px;
+}
+
+.wacpfm-subheading {
+  font-size: 21px;
+}
+
+p, label {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 18px;
+}

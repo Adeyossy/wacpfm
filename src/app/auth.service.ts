@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { AsyncSubject, Observable, concatMap, from, map, of } from 'rxjs';
 import { User, Auth, getAuth, createUserWithEmailAndPassword, UserCredential, signInWithEmailAndPassword, sendEmailVerification, AuthErrorCodes, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { initializeApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
-import { Firestore, addDoc, collection, getFirestore } from 'firebase/firestore';
+import { DocumentReference, Firestore, addDoc, collection, getDoc, getFirestore, setDoc } from 'firebase/firestore';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -18,6 +18,8 @@ export class AuthService {
   paymentsCollection = "payments";
   backendUrl = "/.netlify/functions";
   asyncSubject = new AsyncSubject<FirebaseOptions>();
+
+  FIRESTORE_NULL_DOCUMENT = "firestore/document does not exist";
 
   constructor(private httpClient: HttpClient) {
     this.httpClient.get(`${this.backendUrl}/index`).subscribe(this.asyncSubject);
@@ -57,7 +59,7 @@ export class AuthService {
 
   signUp(email: string, password: string): Observable<UserCredential> {
     return this.getFirebaseAuth$().pipe(
-      concatMap(auth => from(createUserWithEmailAndPassword(auth, email, password)))
+      concatMap(auth => createUserWithEmailAndPassword(auth, email, password))
     );
   }
 
@@ -73,27 +75,46 @@ export class AuthService {
     return this.getFirebaseUser$().pipe(
       concatMap(user => {
         if(user) {
-          return from(sendEmailVerification(user))
-        } else throw AuthErrorCodes.INVALID_EMAIL
+          return sendEmailVerification(user)
+        } else throw new Error(AuthErrorCodes.INVALID_EMAIL)
       })
     )
   }
 
   resetPassword(email: string) {
     return this.getFirebaseAuth$().pipe(
-      concatMap(auth => from(sendPasswordResetEmail(auth, email)))
+      concatMap(auth => sendPasswordResetEmail(auth, email))
     )
   }
 
   signOut() {
     return this.getFirebaseAuth$().pipe(
-      concatMap(auth => from(signOut(auth)))
+      concatMap(auth => signOut(auth))
     );
   }
 
-  addDocToCollection(doc: any, collectionName: string) {
+  addDoc(collectionName: string, doc: any) {
     return this.getFirestore$().pipe(
       concatMap(db => addDoc(collection(db, collectionName), doc))
+    )
+  }
+
+  /**
+   * this method adds a document to firestore
+   * @param docRef - the reference to the firestore document
+   * @param doc - the document data to be stored
+   * @returns Observable<void>
+   */
+  addDocWithRef(docRef: DocumentReference, doc: any) {
+    return this.getFirestore$().pipe(
+      concatMap(db => setDoc(docRef, doc))
+    )
+  }
+
+  getDoc(docRef: DocumentReference, doc: any) {
+    return this.getFirestore$().pipe(
+      concatMap(db => getDoc(docRef)),
+      map(docSnap => docSnap.exists() ? docSnap.data() : new Error(this.FIRESTORE_NULL_DOCUMENT))
     )
   }
 }
