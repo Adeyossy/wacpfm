@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { AsyncSubject, Observable, concatMap, from, map, of } from 'rxjs';
 import { User, Auth, getAuth, createUserWithEmailAndPassword, UserCredential, signInWithEmailAndPassword, sendEmailVerification, AuthErrorCodes, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { initializeApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
-import { DocumentReference, Firestore, addDoc, collection, getDoc, getFirestore, setDoc } from 'firebase/firestore';
+import { DocumentReference, Firestore, addDoc, collection, deleteDoc, getDoc, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -108,13 +108,25 @@ export class AuthService {
   addDocWithRef(docRef: DocumentReference, doc: any) {
     return this.getFirestore$().pipe(
       concatMap(db => setDoc(docRef, doc))
-    )
+    );
   }
 
   getDoc(docRef: DocumentReference, doc: any) {
     return this.getFirestore$().pipe(
       concatMap(db => getDoc(docRef)),
       map(docSnap => docSnap.exists() ? docSnap.data() : new Error(this.FIRESTORE_NULL_DOCUMENT))
-    )
+    );
+  }
+
+  updateDoc(docRef: DocumentReference, delta: any) {
+    return this.getFirestore$().pipe(
+      concatMap(db => updateDoc(docRef, delta))
+    );
+  }
+
+  deleteDoc(docRef: DocumentReference) {
+    return this.getFirestore$().pipe(
+      concatMap(db => deleteDoc(docRef))
+    );
   }
 }
